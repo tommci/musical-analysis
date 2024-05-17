@@ -51,6 +51,12 @@ def add_song(oldPlaylist):
     while(loop):
         print(f'Enter the song name:')
         tempName = input('NAME> ')
+        check = search_for_song(oldPlaylist, tempName)
+        if(len(check) > 0):
+            print(f'The song {tempName} was found in the playlist already. Continue anyway? (Y/N)')
+            yesno = input('Y/N> ')
+            if(not yesno.lower() == 'y'):
+                return newPlaylist
         print(f'Enter the number of artists:')
         artCount = int(input('ARTIST COUNT> '))
         tempArtists = []
@@ -94,6 +100,13 @@ def display_songs(playlist):
     for song in playlist:
         song.display()
 
+def search_for_song(playlist, songToFind):
+    matching = []
+    for song in playlist:
+        if(song.name.lower() == songToFind.lower()):
+            matching.append(song)
+    return matching
+
 def update_file(playlist, name):
     with open(f'{name}.txt', 'w', encoding='utf-8') as file:
         for song in playlist:
@@ -117,13 +130,10 @@ while(loop):
 
     match option:
         case '1':
-            print(f'Enter song name:')
+            print(f'\nEnter song name:')
             songInc = input('SONG> ')
+            matching = search_for_song(playlist, songInc)
 
-            matching = []
-            for song in playlist:
-                if(song.name.lower() == songInc.lower()):
-                    matching.append(song)
             if(len(matching) == 0):
                 print(f'No song found with name {songInc}. Please use the Add Song option to add it.')
             elif(len(matching) == 1):
