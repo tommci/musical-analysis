@@ -22,11 +22,11 @@ class Song:
 def open_playlist(name):
     playlist = []
     try:
-        open(f'{name}.txt', 'r', encoding='utf-8')
+        open(f'spotify-shuffle/{name}.txt', 'r', encoding='utf-8')
     except:
         print(f'Playlist not found, creating new playlist file.')
-        open(f'{name}.txt', 'x', encoding='utf-8')
-    with open(f'{name}.txt', 'r', encoding='utf-8') as file:
+        open(f'spotify-shuffle/{name}.txt', 'x', encoding='utf-8')
+    with open(f'spotify-shuffle/{name}.txt', 'r', encoding='utf-8') as file:
         reader = csv.reader(file, delimiter=',')
         for line in reader:
             tempName = line[0]
@@ -108,7 +108,7 @@ def search_for_song(playlist, songToFind):
     return matching
 
 def update_file(playlist, name):
-    with open(f'{name}.txt', 'w', encoding='utf-8') as file:
+    with open(f'spotify-shuffle/{name}.txt', 'w', encoding='utf-8') as file:
         for song in playlist:
             file.write(f'{song.name},{song.artistCount},')
             i = 0
