@@ -12,6 +12,8 @@ class Song:
     def display(self):
         mins = int(self.length) // 60
         secs = int(self.length) % 60
+        if(secs < 10):
+            secs = (f'0{secs}')
         print(f'\n{self.name} ({mins}:{secs})')
         i = 0
         while(i < int(self.artistCount)):
@@ -60,7 +62,7 @@ def add_song(oldPlaylist):
             if(not yesno.lower() == 'y'):
                 return newPlaylist
         print(f'Enter the number of artists:')
-        artCount = int(input('ARTIST COUNT> '))
+        artCount = int_input('ARTISTS')
         tempArtists = []
         i = 0
         while(i < artCount):
@@ -69,17 +71,17 @@ def add_song(oldPlaylist):
             tempArtists.append(tempArtName)
             i += 1
         print(f'Enter the minutes and seconds of the song:')
-        mins = int(input('MINUTES> '))
-        secs = int(input('SECONDS> '))
+        mins = int_input('MINS')
+        secs = int_input('SECS')
         print(f'Enter the album the song is on:')
         tempAlbum = input('ALBUM> ')
         print(f'Enter the number of global listens:')
-        tempListens = input('LISTENS> ')
+        tempListens = int_input('LISTENS')
         tempLength = (mins * 60) + secs
         song = Song(tempName, artCount, tempArtists, tempListens, tempAlbum, 1, tempLength)
         print(f'\nDoes this look right? (Y/N)')
         song.display()
-        choice = input('Y/N> ')
+        choice = input('\nY/N> ')
         if(choice == 'Y' or choice == 'y'):
             loop = False
     print(f'Song added.')
@@ -106,6 +108,17 @@ def search_for_song(playlist, songToFind):
         if(song.name.lower() == songToFind.lower()):
             matching.append(song)
     return matching
+
+def int_input(inputTitle):
+    while(True):
+        value = input(f'{inputTitle}> ')
+        try:
+            int(value)
+        except:
+            print(f'Invalid input. Please enter a number.')
+        else:
+            break
+    return int(value)
 
 def update_file(playlist, name):
     with open(f'spotify-shuffle/{name}.txt', 'w', encoding='utf-8') as file:
@@ -146,7 +159,7 @@ while(True):
                 while(i < len(matching)):
                     print(f'{i}) ', end='')
                     matching[i].display()
-                conflictChoice = input('CHOICE> ')
+                conflictChoice = int_input('CHOICE')
                 print(f'Incremented song play count.\nNew count: {int(matching[int(conflictChoice)].plays) + 1}')
                 playlist = increment_song(playlist, matching[int(conflictChoice)])
         case '2':
