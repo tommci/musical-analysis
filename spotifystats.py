@@ -186,10 +186,14 @@ class Playlist:
         song = Song(self.tempSongName, self.tempArtistCount, self.tempArtists, self.tempGlobal, self.tempAlbum, 1, self.tempLength)
         self.list.append(song)
         self.destroy_items()
+        self.tempArtists = []
+        self.tempArtistCount = 0
         self.prompt = -1
         menu.main()
     def cancel_add_song(self):
         self.destroy_items()
+        self.tempArtists = []
+        self.tempArtistCount = 0
         self.prompt = -1
         menu.main()
 
