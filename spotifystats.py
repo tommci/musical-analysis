@@ -239,24 +239,7 @@ class Menu:
             self.menuPrompt = ttk.Label(tk, text=f"Playlist: {playlist.playlistName}")
             self.menuPrompt.place(relx=0.5, rely=0.2, anchor="center")
 
-            self.songList = Listbox(tk, activestyle=DOTBOX, height=12, width=60, selectmode=SINGLE)
-            self.songList.place(relx=0.5, rely=0.45, anchor="center")
-
-            self.scroll = ttk.Scrollbar(tk, orient="vertical")
-            self.scroll.config(command=self.songList.yview)
-            self.scroll.pack(side="right", fill="both")
-
-            self.songList.config(yscrollcommand=self.scroll.set)
-
-            for song in playlist.list:
-                songString = song.name + " | "
-                i = 0
-                while(i < len(song.artists) - 1):
-                    songString = songString + song.artists[i] + ", "
-                    i += 1
-                songString = songString + song.artists[i] + " | "
-                songString = songString + song.album + " | Total Plays: " + str(song.plays)
-                self.songList.insert(END, songString)
+            self.songlist_update()
 
             self.addSongBut = ttk.Button(tk, text="Add Song", command=playlist.add_song)
             self.addSongBut.place(relx=0.3, rely=0.7, anchor="center")
