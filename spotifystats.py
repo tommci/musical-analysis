@@ -34,7 +34,6 @@ class Playlist:
         self.tempLength = 0
         self.tempAlbum = ""
         self.tempGlobal = 0
-        self.songExistCheck = False
     def destroy_items(self):
         self.playlistEntry.destroy()
         self.playlistPrompt.destroy()
@@ -116,12 +115,12 @@ class Playlist:
                 self.cancelButton = ttk.Button(tk, text="Cancel", command=self.cancel_add_song)
                 self.cancelButton.place(relx=0.5, rely=0.7, anchor="center")
             case 2:
-                self.songExistCheck = False
+                songExists = False
                 for song in self.list:
                     if(entryVal.lower() == song.name.lower()):
-                        self.songExistCheck = True
+                        songExists = True
                 self.tempSongName = entryVal
-                if(self.songExistCheck):
+                if(songExists):
                     self.playlistEntry.destroy()
                     self.playlistPrompt.configure(text=f"\n\n\nThe song \"{entryVal}\" already exists on this playlist.\nContinue anyway?")
                     self.prompt = 9
