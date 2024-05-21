@@ -6,7 +6,7 @@ tk = Tk(className=" Spotify Shuffle")
 tk.geometry("500x500")
 
 class Song:
-    def __init__(self, name, artistCount, artists, listens, album, plays, length):
+    def __init__(self, name, artistCount, artists, listens, album, plays, length, explicit):
         self.name = name
         self.artistCount = artistCount
         self.artists = artists
@@ -14,6 +14,7 @@ class Song:
         self.album = album
         self.plays = plays
         self.length = length
+        self.explicit = explicit
 
 class Playlist:
     def __init__(self):
@@ -22,6 +23,7 @@ class Playlist:
         self.confirmButton = Button(tk)
         self.denyButton = Button(tk)
         self.cancelButton = Button(tk)
+        self.explicitCheckbox = ttk.Checkbutton(tk)
         self.playlistExists = False
         self.playlistName = ""
         self.list = []
@@ -34,12 +36,15 @@ class Playlist:
         self.tempLength = 0
         self.tempAlbum = ""
         self.tempGlobal = 0
+        self.tempExpl = 0
+        self.expl = IntVar()
     def destroy_items(self):
         self.playlistEntry.destroy()
         self.playlistPrompt.destroy()
         self.confirmButton.destroy()
         self.denyButton.destroy()
         self.cancelButton.destroy()
+        self.explicitCheckbox.destroy()
     def try_playlist(self):
         self.playlistName = self.playlistEntry.get()
         self.destroy_items()
@@ -78,7 +83,8 @@ class Playlist:
                 tempAlbum = line[j + 1]
                 tempPlays = line[j + 2]
                 tempLength = line[j + 3]
-                song = Song(tempName, artCount, tempArtists, tempListens, tempAlbum, tempPlays, tempLength)
+                tempExpl = line[j + 4]
+                song = Song(tempName, artCount, tempArtists, tempListens, tempAlbum, tempPlays, tempLength, tempExpl)
                 playlist.append(song)
         self.list = playlist
         menu.main()
@@ -86,7 +92,7 @@ class Playlist:
         self.destroy_items()
         menu.destroy_items()
 
-        self.playlistPrompt = ttk.Label(tk, text="Enter playlist name:")
+        self.playlistPrompt = ttk.Label(tk, text="Enter playlist name.")
         self.playlistPrompt.place(relx=0.5, rely=0.3, anchor="center")
 
         self.playlistEntry = ttk.Entry(tk, width=20)
@@ -106,8 +112,12 @@ class Playlist:
                 menu.destroy_items()
                 self.add_song()
             case 1:
-                self.playlistPrompt = ttk.Label(tk, text="Enter song name:")
+                self.playlistPrompt = ttk.Label(tk, text="Enter song name.", justify='center')
                 self.playlistPrompt.place(relx=0.5, rely=0.3, anchor="center")
+
+                self.explicitCheckbox = ttk.Checkbutton(tk, variable=self.expl, text="Explicit?")
+                self.explicitCheckbox.place(relx=0.7, rely=0.45, anchor="center")
+                self.expl.set(0)
 
                 self.confirmButton = ttk.Button(tk, text="OK", command=self.add_song)
                 self.confirmButton.place(relx=0.5, rely=0.6, anchor="center")
@@ -115,6 +125,8 @@ class Playlist:
                 self.cancelButton = ttk.Button(tk, text="Cancel", command=self.cancel_add_song)
                 self.cancelButton.place(relx=0.5, rely=0.7, anchor="center")
             case 2:
+                self.tempExpl = self.expl.get()
+                self.explicitCheckbox.destroy()
                 songExists = False
                 for song in self.list:
                     if(entryVal.lower() == song.name.lower()):
@@ -125,44 +137,48 @@ class Playlist:
                     self.playlistPrompt.configure(text=f"\n\n\nThe song \"{entryVal}\" already exists on this playlist.\nContinue anyway?")
                     self.prompt = 9
                 else:
-                    self.playlistPrompt.configure(text="Enter number of artists:")
+                    self.playlistPrompt.configure(text="Enter number of artists.")
             case 3:
                 if((entryVal.isdigit() == True) and (int(entryVal) > 0)):
                     self.tempArtistCount = int(entryVal)
-                    self.playlistPrompt.configure(text=f"Enter artist {self.counter}:")
+                    self.playlistPrompt.configure(text=f"Enter artist {self.counter}.")
                 else:
                     self.prompt -= 1
-                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter number of artists:")
+                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter number of artists.")
             case 4:
                 self.tempArtists.append(entryVal)
                 if(not self.tempArtistCount == self.counter):
                     self.counter += 1
                     self.prompt -= 1
-                    self.playlistPrompt.configure(text=f"Enter artist {self.counter}:")
+                    self.playlistPrompt.configure(text=f"Enter artist {self.counter}.")
                 else:
                     self.counter = 1
-                    self.playlistPrompt.configure(text="Enter the minute length of the song:")
+                    self.playlistPrompt.configure(text="Enter the minute length of the song.")
             case 5: 
                 if((entryVal.isdigit() == True) and (int(entryVal) > -1)):
                     self.tempMinute = entryVal
-                    self.playlistPrompt.configure(text="Enter the second length of the song:")
+                    self.playlistPrompt.configure(text="Enter the second length of the song.")
                 else:
                     self.prompt -= 1
-                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter the minute length of the song:")
+                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter the minute length of the song.")
             case 6:
                 if((entryVal.isdigit() == True) and (int(entryVal) > -1)):
                     self.tempLength = (int(self.tempMinute) * 60) + int(entryVal)
-                    self.playlistPrompt.configure(text="Enter the album the song is on:")
+                    self.playlistPrompt.configure(text="Enter the album/EP/single the song is on.\n(If the song is on multiple, enter whichever version is on your playlist.)")
                 else:
                     self.prompt -= 1
-                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter the second length of the song:")
+                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter the second length of the song.")
             case 7:
                 self.tempAlbum = entryVal
-                self.playlistPrompt.configure(text="Enter the number of global listens:")
+                self.playlistPrompt.configure(text="Enter the number of global listens.\nIf this value is unknown, enter \"?\"")
             case 8:
-                if((entryVal.isdigit() == True) and (int(entryVal) > -1)):
+                if(((entryVal.isdigit() == True) and (int(entryVal) > -1)) or (entryVal == '?')):
                     self.playlistEntry.destroy()
-                    self.tempGlobal = int(entryVal)
+                    self.cancelButton.destroy()
+                    if(entryVal == '?'):
+                        self.tempGlobal = "Unknown"
+                    else:
+                        self.tempGlobal = int(entryVal)
 
                     mins = int(self.tempLength) // 60
                     secs = int(self.tempLength) % 60
@@ -181,28 +197,31 @@ class Playlist:
                     self.denyButton = ttk.Button(tk, text="NO", command=self.add_song)
                     self.denyButton.place(relx=0.6, rely=0.6, anchor="center")
 
-                    self.playlistEntry.destroy()
-                    self.cancelButton.destroy()
+                    if(self.tempExpl == 0):
+                        expl = ""
+                    else:
+                        expl = "[E]"
 
-                    self.playlistPrompt.configure(text=f"Does this look correct?\n\n\n\n{self.tempSongName} ({mins}:{secs})\n{allArtists}\n{self.tempAlbum}\nGlobal Listens: {self.tempGlobal}")
+                    self.playlistPrompt.configure(text=f"Does this look correct?\n\n\n\n{self.tempSongName} {expl} ({mins}:{secs})\n{allArtists}\n{self.tempAlbum}\nGlobal Listens: {self.tempGlobal}", justify='left')
                 else:
                     self.prompt -= 1
-                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter the number of global listens:")
+                    self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter the number of global listens.")
             case 9: # if the user decides the song info is not correct
                 self.destroy_items()
                 self.prompt = 0
                 self.add_song()
             case 10: # this is for when the song name already exists in the playlist but the user continues anyway
                 self.prompt = 2
-                self.playlistPrompt.configure(text="Enter number of artists:")
+                self.playlistPrompt.configure(text="Enter number of artists.")
             case _:
                 print(f"Something went wrong in class Playlist > add_song\nDefault case checked\nCase value: {self.prompt}")
     def finish_song(self):
-        song = Song(self.tempSongName, self.tempArtistCount, self.tempArtists, self.tempGlobal, self.tempAlbum, 1, self.tempLength)
+        song = Song(self.tempSongName, self.tempArtistCount, self.tempArtists, self.tempGlobal, self.tempAlbum, 1, self.tempLength, self.tempExpl)
         self.list.append(song)
         self.destroy_items()
         self.tempArtists = []
         self.tempArtistCount = 0
+        self.tempExpl = 0
         self.prompt = -1
         menu.main()
     def cancel_add_song(self):
@@ -210,6 +229,7 @@ class Playlist:
         self.tempSongName = ""
         self.tempArtists = []
         self.tempArtistCount = 0
+        self.tempExpl = 0
         self.prompt = -1
         menu.main()
 
@@ -307,9 +327,9 @@ class Menu:
                 while(i < int(song.artistCount)):
                     file.write(f'{song.artists[i]}|')
                     i += 1
-                file.write(f'{song.listens}|{song.album}|{song.plays}|{song.length}\n')
+                file.write(f'{song.listens}|{song.album}|{song.plays}|{song.length}|{song.explicit}\n')
         if(self.quitCheck):
-            tk.destroy()
+            tk.destroy() # closes window, ends program
         else:
             self.menuSplash = ttk.Label(tk, text="Data saved.")
             self.menuSplash.place(relx=0.5, rely=0.4, anchor="center")
@@ -353,6 +373,9 @@ class Menu:
             for stat in songDataList:
                 self.songList.insert(END, stat)
 
+            self.quitBut = ttk.Button(tk, text="Back", command=self.main)
+            self.quitBut.place(relx=0.5, rely=0.76, anchor="center")
+
         else:
             self.menuSplash = ttk.Label(tk, text="No song selected. Select a song from the list above.")
             self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
@@ -360,7 +383,7 @@ class Menu:
         self.songList.destroy()
         self.scroll.destroy()
 
-        self.songList = Listbox(tk, activestyle=DOTBOX, height=12, width=60, selectmode=SINGLE)
+        self.songList = Listbox(tk, activestyle=DOTBOX, height=12, width=65, selectmode=SINGLE)
         self.songList.place(relx=0.5, rely=0.45, anchor="center")
 
         self.scroll = ttk.Scrollbar(tk, orient="vertical")
@@ -370,7 +393,12 @@ class Menu:
         self.songList.config(yscrollcommand=self.scroll.set)
 
         for song in playlist.list:
-            songString = song.name + " | "
+            expl = ""
+            if(song.explicit == '0' or song.explicit == 0):
+                expl = ""
+            else:
+                expl = " | [E]"
+            songString = song.name + expl + " | "
             i = 0
             while(i < len(song.artists) - 1):
                 songString = songString + song.artists[i] + ", "
