@@ -1,9 +1,13 @@
 from tkinter import *
 from tkinter import ttk
+from pathlib import Path
+
 import csv
 
 tk = Tk(className=" Spotify Shuffle")
 tk.geometry("500x500")
+
+Path("spotify-shuffle/data").mkdir(exist_ok=True)
 
 class Song:
     def __init__(self, name, artistCount, artists, listens, album, plays, length, explicit):
@@ -15,6 +19,20 @@ class Song:
         self.plays = plays
         self.length = length
         self.explicit = explicit
+    def change_artist(self, index, newName):
+        self.artists[index] = newName
+    def add_artist(self):
+        newCount = int(self.artistCount) + 1
+        self.artists.append("New Artist")
+        self.artistCount = newCount
+    def remove_artist(self):
+        if(len(self.artists) < 2):
+            return 0
+        else:
+            newCount = int(self.artistCount) - 1
+            self.artists.pop()
+            self.artistCount = newCount
+            return 1
 
 class Playlist:
     def __init__(self):
@@ -49,7 +67,7 @@ class Playlist:
         self.playlistName = self.playlistEntry.get()
         self.destroy_items()
         try:
-            open(f'spotify-shuffle/{self.playlistName}.txt', 'r', encoding='utf-8')
+            open(f'spotify-shuffle/data/{playlist.playlistName}.dat', 'r', encoding='utf-8')
         except:
             self.playlistExists = False
 
@@ -67,9 +85,9 @@ class Playlist:
     def open_playlist(self):
         name = self.playlistName
         if(not self.playlistExists):
-            open(f'spotify-shuffle/{name}.txt', 'x', encoding='utf-8')
+            open(f'spotify-shuffle/data/{name}.dat', 'x', encoding='utf-8')
         playlist = []
-        with open(f'spotify-shuffle/{name}.txt', 'r', encoding='utf-8') as file:
+        with open(f'spotify-shuffle/data/{name}.dat', 'r', encoding='utf-8') as file:
             reader = csv.reader(file, delimiter='|')
             for line in reader:
                 tempName = line[0]
@@ -233,6 +251,7 @@ class Playlist:
         self.prompt = -1
         menu.main()
 
+
 class Menu:
     def __init__(self):
         self.menuPrompt = Label(tk)
@@ -248,6 +267,12 @@ class Menu:
         self.incButton = Button(tk)
         self.quitCheck = False
         self.editBut = Button(tk)
+        self.menuEntry = Entry(tk)
+        self.songUpdated = False
+        self.songToEdit = 0  # this value is the INDEX of the song in the playlist
+        self.artistMod = 0 # 0 = don't add/remove artist, 1 = add artist, 2 = remove artist, 3 = failed to remove artist
+        self.addArtistBut = Button(tk)
+        self.remArtistBut = Button(tk)
     def destroy_items(self):
         self.menuPrompt.destroy()
         self.menuSplash.destroy()
@@ -261,10 +286,14 @@ class Menu:
         self.saveBut.destroy()
         self.incButton.destroy()
         self.editBut.destroy()
+        self.menuEntry.destroy()
+        self.addArtistBut.destroy()
+        self.remArtistBut.destroy()
     def main(self):
         playlist.destroy_items()
         self.destroy_items()
         self.quitCheck = False
+        self.songUpdated = False
         if(len(playlist.list) < 1):
             self.menuPrompt = ttk.Label(tk, text=f"Playlist \"{playlist.playlistName}\" is currently empty. Start by adding a song.")
             self.menuPrompt.place(relx=0.5, rely=0.5, anchor="center")
@@ -320,7 +349,7 @@ class Menu:
             tk.destroy()
     def save(self):
         self.destroy_items()
-        with open(f'spotify-shuffle/{playlist.playlistName}.txt', 'w', encoding='utf-8') as file:
+        with open(f'spotify-shuffle/data/{playlist.playlistName}.dat', 'w', encoding='utf-8') as file:
             for song in playlist.list:
                 file.write(f'{song.name}|{song.artistCount}|')
                 i = 0
@@ -343,42 +372,137 @@ class Menu:
             value += 1
             playlist.list[self.songList.curselection()[0]].plays = value
             self.songlist_update()
+            self.menuSplash = ttk.Label(tk, text=f"Song updated. New play count: {value}")
+            self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
         else:
             self.menuSplash = ttk.Label(tk, text="No song selected. Select a song from the list above.")
             self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
     def edit(self):
         self.menuSplash.destroy()
-        if(len(self.songList.curselection()) > 0):
-            song = playlist.list[self.songList.curselection()[0]]
-            self.destroy_items()
+        match self.artistMod:
+            case 0:
+                if(len(self.songList.curselection()) > 0):
+                    self.edit_menu()
+                else:
+                    self.menuSplash = ttk.Label(tk, text="No song selected. Select a song from the list above.")
+                    self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
+            case _:
+                self.edit_menu()
+    def edit_menu(self):
+        if(not self.songUpdated):
+            self.songToEdit = self.songList.curselection()[0]
+        song = playlist.list[self.songToEdit]
 
-            secs = int(song.length) % 60
-            if(secs < 10):
-                secs = (f"0{secs}")
+        self.destroy_items()
 
-            songDataList = []
-            songDataList.append(f"                  Title)    {song.name}")
-            i = 0
-            while(i < int(song.artistCount)):
-                songDataList.append(f"             Artist {i + 1})    {song.artists[i]}")
-                i += 1
-            songDataList.append(f"             Length)    {int(song.length) // 60}:{secs}")
-            songDataList.append(f"             Album)    {song.album}")
-            songDataList.append(f" Global Listens)    {song.listens}")
-            songDataList.append(f"      Play Count)    {song.plays}")
+        match self.artistMod:
+            case 1:
+                self.menuSplash = ttk.Label(tk, text="Artist added.")
+            case 2:
+                self.menuSplash = ttk.Label(tk, text="Artist removed.")
+            case 3:
+                self.menuSplash = ttk.Label(tk, text="Cannot remove any more artists!")
+            case _:
+                self.menuSplash = ttk.Label(tk)
+        self.artistMod = 0
+        self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
 
-            self.songList = Listbox(tk, activestyle=DOTBOX, height=8, width=60, selectmode=SINGLE)
-            self.songList.place(relx=0.5, rely=0.45, anchor="center")
+        prompt = "Select an entry from below, enter its new value, then press Update Info."
+        if(self.songUpdated):
+            prompt = "Song info updated."
 
-            for stat in songDataList:
-                self.songList.insert(END, stat)
+        self.menuPrompt = ttk.Label(tk, text=prompt)
+        self.menuPrompt.place(relx=0.5, rely=0.25, anchor="center")
 
-            self.quitBut = ttk.Button(tk, text="Back", command=self.main)
-            self.quitBut.place(relx=0.5, rely=0.76, anchor="center")
+        secs = int(song.length) % 60
+        if(secs < 10):
+            secs = (f"0{secs}")
 
-        else:
-            self.menuSplash = ttk.Label(tk, text="No song selected. Select a song from the list above.")
-            self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
+        songDataList = []
+        songDataList.append(f"                  Title)    {song.name}")
+        i = 0
+        while(i < int(song.artistCount)):
+            songDataList.append(f"             Artist {i + 1})    {song.artists[i]}")
+            i += 1
+        songDataList.append(f"             Length)    {int(song.length) // 60}:{secs}")
+        songDataList.append(f"             Album)    {song.album}")
+        songDataList.append(f" Global Listens)    {song.listens}")
+        songDataList.append(f"      Play Count)    {song.plays}")
+
+        self.songList = Listbox(tk, activestyle=DOTBOX, height=8, width=60, selectmode=SINGLE)
+        self.songList.place(relx=0.5, rely=0.45, anchor="center")
+
+        for stat in songDataList:
+            self.songList.insert(END, stat)
+
+        self.quitBut = ttk.Button(tk, text="Save Changes", command=self.main)
+        self.quitBut.place(relx=0.4, rely=0.76, anchor="center")
+
+        self.confirmBut = ttk.Button(tk, text="  Update Info  ", command=self.update_song)
+        self.confirmBut.place(relx=0.6, rely=0.76, anchor="center")
+
+        self.menuEntry = ttk.Entry(tk, width=20)
+        self.menuEntry.place(relx=0.5, rely=0.65, anchor="center")
+
+        self.addArtistBut = ttk.Button(tk, text="   Add Artist   ", command=self.add_artist)
+        self.addArtistBut.place(relx=0.4, rely=0.82, anchor="center")
+
+        self.remArtistBut = ttk.Button(tk, text="Remove Artist", command=self.remove_artist)
+        self.remArtistBut.place(relx=0.6, rely=0.82, anchor="center")
+    def update_song(self):
+        self.menuSplash.destroy()
+        match self.artistMod:
+            case 0:
+                if(len(self.songList.curselection()) > 0):
+                    newVal = self.menuEntry.get()
+                    artistCount = int(playlist.list[self.songToEdit].artistCount)
+                    if(self.songList.curselection()[0] == 0): # update name
+                        playlist.list[self.songToEdit].name = newVal
+                    elif(self.songList.curselection()[0] <= artistCount): # update artist name
+                        playlist.list[self.songToEdit].change_artist((self.songList.curselection()[0] - 1), newVal)
+                    elif(self.songList.curselection()[0] == artistCount + 1): # update song length
+                        if(newVal.isdigit() and (int(newVal) > 0)):
+                            playlist.list[self.songToEdit].length = newVal
+                        else:
+                            print("Invalid value entered")
+                    elif(self.songList.curselection()[0] == artistCount + 2): # update album
+                        playlist.list[self.songToEdit].album = newVal
+                    elif(self.songList.curselection()[0] == artistCount + 3): # update global listens
+                        if(newVal.isdigit() and (int(newVal) > 0)):
+                            playlist.list[self.songToEdit].listens = newVal
+                        else:
+                            print("Invalid value entered")
+                    elif(self.songList.curselection()[0] == artistCount + 4): # update play count
+                        if(newVal.isdigit() and (int(newVal) > 0)):
+                            playlist.list[self.songToEdit].plays = newVal
+                        else:
+                            print("Invalid value entered")
+                    self.songUpdated = True
+                    self.edit()
+                else:
+                    self.menuSplash = ttk.Label(tk, text="Nothing selected. Select an item from the list above.")
+                    self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
+            case 1:
+                playlist.list[self.songToEdit].add_artist()
+                self.menuSplash = ttk.Label(tk, text="Artist added.")
+                self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
+                self.songUpdated = True
+                self.edit()
+            case 2:
+                if(playlist.list[self.songToEdit].remove_artist() == 0):
+                    self.artistMod = 3
+                self.songUpdated = True
+                self.edit()
+            case _:
+                print(f"Something went wrong in class Menu > update_song\nDefault case checked\nCase value: {self.artistMod}")
+                self.songUpdated = True
+                self.edit()
+    def add_artist(self):
+        self.artistMod = 1
+        self.update_song()
+    def remove_artist(self):
+        self.artistMod = 2
+        self.update_song()
     def songlist_update(self):
         self.songList.destroy()
         self.scroll.destroy()
