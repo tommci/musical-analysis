@@ -270,7 +270,7 @@ class Menu:
         self.menuEntry = Entry(tk)
         self.songUpdated = False
         self.songToEdit = 0  # this value is the INDEX of the song in the playlist
-        self.artistMod = 0 # 0 = don't add/remove artist, 1 = add artist, 2 = remove artist, 3 = failed to remove artist
+        self.updateSongCheck = 0 # 0 = don't add/remove artist, 1 = add artist, 2 = remove artist, 3 = failed to remove artist, 4 = toggle explicit
         self.addArtistBut = Button(tk)
         self.remArtistBut = Button(tk)
     def destroy_items(self):
@@ -379,7 +379,7 @@ class Menu:
             self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
     def edit(self):
         self.menuSplash.destroy()
-        match self.artistMod:
+        match self.updateSongCheck:
             case 0:
                 if(len(self.songList.curselection()) > 0):
                     self.edit_menu()
@@ -391,20 +391,30 @@ class Menu:
     def edit_menu(self):
         if(not self.songUpdated):
             self.songToEdit = self.songList.curselection()[0]
+            self.updateSongCheck = 0
         song = playlist.list[self.songToEdit]
 
         self.destroy_items()
 
-        match self.artistMod:
+        match self.updateSongCheck:
             case 1:
                 self.menuSplash = ttk.Label(tk, text="Artist added.")
             case 2:
                 self.menuSplash = ttk.Label(tk, text="Artist removed.")
             case 3:
                 self.menuSplash = ttk.Label(tk, text="Cannot remove any more artists!")
+            case 4:
+                self.menuSplash = ttk.Label(tk)
+                match song.explicit:
+                    case 0:
+                        song.explicit = 1
+                    case '0':
+                        song.explicit = 1
+                    case _:
+                        song.explicit = 0
             case _:
                 self.menuSplash = ttk.Label(tk)
-        self.artistMod = 0
+        self.updateSongCheck = 0
         self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
 
         prompt = "Select an entry from below, enter its new value, then press Update Info."
@@ -418,8 +428,12 @@ class Menu:
         if(secs < 10):
             secs = (f"0{secs}")
 
+        explDisplay = ""
+        if(int(song.explicit)):
+            explDisplay = " [E]"
+
         songDataList = []
-        songDataList.append(f"                  Title)    {song.name}")
+        songDataList.append(f"                  Title)    {song.name}{explDisplay}")
         i = 0
         while(i < int(song.artistCount)):
             songDataList.append(f"             Artist {i + 1})    {song.artists[i]}")
@@ -442,16 +456,20 @@ class Menu:
         self.confirmBut.place(relx=0.6, rely=0.76, anchor="center")
 
         self.menuEntry = ttk.Entry(tk, width=20)
-        self.menuEntry.place(relx=0.5, rely=0.65, anchor="center")
+        self.menuEntry.place(relx=0.5, rely=0.63, anchor="center")
 
         self.addArtistBut = ttk.Button(tk, text="   Add Artist   ", command=self.add_artist)
         self.addArtistBut.place(relx=0.4, rely=0.82, anchor="center")
 
         self.remArtistBut = ttk.Button(tk, text="Remove Artist", command=self.remove_artist)
         self.remArtistBut.place(relx=0.6, rely=0.82, anchor="center")
+
+        self.editBut = ttk.Button(tk, command=self.explicit_toggle, text="Toggle Explicit")
+        self.editBut.place(relx=0.5, rely=0.69, anchor="center")
+
     def update_song(self):
         self.menuSplash.destroy()
-        match self.artistMod:
+        match self.updateSongCheck:
             case 0:
                 if(len(self.songList.curselection()) > 0):
                     newVal = self.menuEntry.get()
@@ -490,18 +508,22 @@ class Menu:
                 self.edit()
             case 2:
                 if(playlist.list[self.songToEdit].remove_artist() == 0):
-                    self.artistMod = 3
+                    self.updateSongCheck = 3
                 self.songUpdated = True
                 self.edit()
             case _:
-                print(f"Something went wrong in class Menu > update_song\nDefault case checked\nCase value: {self.artistMod}")
+                print(f"Something went wrong in class Menu > update_song\nDefault case checked\nCase value: {self.updateSongCheck}")
                 self.songUpdated = True
                 self.edit()
+    def explicit_toggle(self):
+        self.updateSongCheck = 4
+        self.songUpdated = True
+        self.edit()
     def add_artist(self):
-        self.artistMod = 1
+        self.updateSongCheck = 1
         self.update_song()
     def remove_artist(self):
-        self.artistMod = 2
+        self.updateSongCheck = 2
         self.update_song()
     def songlist_update(self):
         self.songList.destroy()
