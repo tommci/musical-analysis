@@ -33,6 +33,25 @@ class Song:
             self.artists.pop()
             self.artistCount = newCount
             return 1
+    def get_length(self):
+        mins = int(self.length) // 60
+        secs = int(self.length) % 60
+        if(secs < 10):
+            secs = (f'0{secs}')
+        return [mins, secs]
+    def get_artist_string(self):
+        allArtists = ""
+        i = 0
+        while(i < (len(self.artists) - 1)):
+            allArtists = allArtists + self.artists[i] + ", "
+            i += 1
+        allArtists = allArtists + self.artists[i]
+        return allArtists
+    def get_expl_string(self):
+        expl = ""
+        if(int(self.explicit) == 1):
+            expl = " [E]"
+        return expl
 
 class Playlist:
     def __init__(self):
@@ -198,29 +217,14 @@ class Playlist:
                     else:
                         self.tempGlobal = int(entryVal)
 
-                    mins = int(self.tempLength) // 60
-                    secs = int(self.tempLength) % 60
-                    allArtists = ""
-                    i = 0
-                    while(i < len(self.tempArtists) - 1):
-                        allArtists = allArtists + self.tempArtists[i] + ", "
-                        i += 1
-                    allArtists = allArtists + self.tempArtists[i]
-                    if(secs < 10):
-                        secs = (f'0{secs}')
-
                     self.confirmButton.configure(text="YES", command=self.finish_song)
                     self.confirmButton.place(relx=0.4, rely=0.6, anchor="center")
 
                     self.denyButton = ttk.Button(tk, text="NO", command=self.add_song)
                     self.denyButton.place(relx=0.6, rely=0.6, anchor="center")
-
-                    if(self.tempExpl == 0):
-                        expl = ""
-                    else:
-                        expl = "[E]"
-
-                    self.playlistPrompt.configure(text=f"Does this look correct?\n\n\n\n{self.tempSongName} {expl} ({mins}:{secs})\n{allArtists}\n{self.tempAlbum}\nGlobal Listens: {self.tempGlobal}", justify='left')
+                    
+                    song = Song(self.tempSongName, self.tempArtistCount, self.tempArtists, self.tempGlobal, self.tempAlbum, 1, self.tempLength, self.tempExpl)
+                    self.playlistPrompt.configure(text=f"Is this correct?\n\n\n{song.name}{song.get_expl_string()} ({song.get_length()[0]}:{song.get_length()[1]})\n{song.get_artist_string()}\n{song.album}\nGlobal Listens: {song.listens}\nPlay Count: {song.plays}", justify='left')
                 else:
                     self.prompt -= 1
                     self.playlistPrompt.configure(text="Invalid value. Enter a number.\nEnter the number of global listens.")
@@ -251,7 +255,6 @@ class Playlist:
         self.prompt = -1
         menu.main()
 
-
 class Menu:
     def __init__(self):
         self.menuPrompt = Label(tk)
@@ -272,7 +275,8 @@ class Menu:
         self.songToEdit = 0  # this value is the INDEX of the song in the playlist
         self.updateSongCheck = 0 # 0 = don't add/remove artist, 1 = add artist, 2 = remove artist, 3 = failed to remove artist, 4 = toggle explicit
         self.addArtistBut = Button(tk)
-        self.remArtistBut = Button(tk)
+        self.removeBut = Button(tk)
+        self.sortBut = Button(tk)
     def destroy_items(self):
         self.menuPrompt.destroy()
         self.menuSplash.destroy()
@@ -288,12 +292,14 @@ class Menu:
         self.editBut.destroy()
         self.menuEntry.destroy()
         self.addArtistBut.destroy()
-        self.remArtistBut.destroy()
+        self.removeBut.destroy()
+        self.sortBut.destroy()
     def main(self):
         playlist.destroy_items()
         self.destroy_items()
         self.quitCheck = False
         self.songUpdated = False
+        self.updateSongCheck = 0
         if(len(playlist.list) < 1):
             self.menuPrompt = ttk.Label(tk, text=f"Playlist \"{playlist.playlistName}\" is currently empty. Start by adding a song.")
             self.menuPrompt.place(relx=0.5, rely=0.5, anchor="center")
@@ -329,6 +335,12 @@ class Menu:
 
             self.editBut = ttk.Button(tk, text="Edit Song", command=self.edit)
             self.editBut.place(relx=0.5, rely=0.76, anchor="center")
+            
+            self.sortBut = ttk.Button(tk, text="Sort")
+            self.sortBut.place(relx=0.3, rely=0.82, anchor="center")
+
+            self.removeBut = ttk.Button(tk, text="Remove Song", command=self.remove_song)
+            self.removeBut.place(relx=0.5, rely=0.82, anchor="center")
     def quit(self):
         self.quitCheck = True
         if(len(playlist.list) > 0):
@@ -373,10 +385,10 @@ class Menu:
             playlist.list[self.songList.curselection()[0]].plays = value
             self.songlist_update()
             self.menuSplash = ttk.Label(tk, text=f"Song updated. New play count: {value}")
-            self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
+            self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
         else:
             self.menuSplash = ttk.Label(tk, text="No song selected. Select a song from the list above.")
-            self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
+            self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
     def edit(self):
         self.menuSplash.destroy()
         match self.updateSongCheck:
@@ -385,7 +397,7 @@ class Menu:
                     self.edit_menu()
                 else:
                     self.menuSplash = ttk.Label(tk, text="No song selected. Select a song from the list above.")
-                    self.menuSplash.place(relx=0.5, rely=0.85, anchor="center")
+                    self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
             case _:
                 self.edit_menu()
     def edit_menu(self):
@@ -461,12 +473,11 @@ class Menu:
         self.addArtistBut = ttk.Button(tk, text="   Add Artist   ", command=self.add_artist)
         self.addArtistBut.place(relx=0.4, rely=0.82, anchor="center")
 
-        self.remArtistBut = ttk.Button(tk, text="Remove Artist", command=self.remove_artist)
-        self.remArtistBut.place(relx=0.6, rely=0.82, anchor="center")
+        self.removeBut = ttk.Button(tk, text="Remove Artist", command=self.remove_artist)
+        self.removeBut.place(relx=0.6, rely=0.82, anchor="center")
 
         self.editBut = ttk.Button(tk, command=self.explicit_toggle, text="Toggle Explicit")
         self.editBut.place(relx=0.5, rely=0.69, anchor="center")
-
     def update_song(self):
         self.menuSplash.destroy()
         match self.updateSongCheck:
@@ -539,19 +550,38 @@ class Menu:
         self.songList.config(yscrollcommand=self.scroll.set)
 
         for song in playlist.list:
-            expl = ""
-            if(song.explicit == '0' or song.explicit == 0):
-                expl = ""
-            else:
-                expl = " | [E]"
-            songString = song.name + expl + " | "
-            i = 0
-            while(i < len(song.artists) - 1):
-                songString = songString + song.artists[i] + ", "
-                i += 1
-            songString = songString + song.artists[i] + " | "
-            songString = songString + song.album + " | Total Plays: " + str(song.plays)
+            songString = (f"{song.name}{song.get_expl_string()} || {song.get_artist_string()} || {song.album} || Total Plays: {str(song.plays)}")
             self.songList.insert(END, songString)
+    def remove_song(self):
+        self.menuSplash.destroy()
+        self.updateSongCheck += 1
+        match self.updateSongCheck:
+            case 1:
+                if(len(self.songList.curselection()) > 0):
+                    self.songToEdit = self.songList.curselection()[0]
+                    song = playlist.list[self.songToEdit]
+                    self.destroy_items()
+
+                    self.menuPrompt = ttk.Label(tk, text="Are you sure you want to remove this song?")
+                    self.menuPrompt.place(relx=0.5, rely=0.25, anchor="center")
+
+                    self.menuSplash = ttk.Label(tk, text=f"{song.name}{song.get_expl_string()} ({song.get_length()[0]}:{song.get_length()[1]})\n{song.get_artist_string()}\n{song.album}\nGlobal Listens: {song.listens}\nPlay Count: {song.plays}", justify='left')
+                    self.menuSplash.place(relx=0.5, rely=0.4, anchor="center")
+
+                    self.confirmBut = ttk.Button(tk, text="YES", command=self.remove_song)
+                    self.confirmBut.place(relx=0.4, rely=0.6, anchor="center")
+
+                    self.denyBut = ttk.Button(tk, text="NO", command=self.main)
+                    self.denyBut.place(relx=0.6, rely=0.6, anchor="center")
+                else:
+                    self.updateSongCheck = 0
+                    self.menuSplash = ttk.Label(tk, text="No song selected. Select a song from the list above.")
+                    self.menuSplash.place(relx=0.5, rely=0.9, anchor="center")
+            case 2:
+                playlist.list.pop(self.songToEdit)
+                self.main()
+            case _:
+                print(f"Something went wrong in class Menu > remove_song\nDefault case checked\nCase value: {self.updateSongCheck}")
 
 # end of definitions
 # instantiations:
