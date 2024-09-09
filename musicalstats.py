@@ -4,10 +4,10 @@ from pathlib import Path
 
 import csv
 
-tk = Tk(className=" Spotify Shuffle")
+tk = Tk(className=" Musical Analysis")
 tk.geometry("500x500")
 
-Path("spotify-shuffle/data").mkdir(exist_ok=True)
+Path("musical-analysis/data").mkdir(exist_ok=True)
 
 class Song:
     def __init__(self, name, artistCount, artists, listens, album, plays, length, explicit):
@@ -86,7 +86,7 @@ class Playlist:
         self.playlistName = self.playlistEntry.get()
         self.destroy_items()
         try:
-            open(f'spotify-shuffle/data/{playlist.playlistName}.dat', 'r', encoding='utf-8')
+            open(f'musical-analysis/data/{playlist.playlistName}.dat', 'r', encoding='utf-8')
         except:
             self.playlistExists = False
 
@@ -104,9 +104,9 @@ class Playlist:
     def open_playlist(self):
         name = self.playlistName
         if(not self.playlistExists):
-            open(f'spotify-shuffle/data/{name}.dat', 'x', encoding='utf-8')
+            open(f'musical-analysis/data/{name}.dat', 'x', encoding='utf-8')
         playlist = []
-        with open(f'spotify-shuffle/data/{name}.dat', 'r', encoding='utf-8') as file:
+        with open(f'musical-analysis/data/{name}.dat', 'r', encoding='utf-8') as file:
             reader = csv.reader(file, delimiter='|')
             for line in reader:
                 tempName = line[0]
@@ -361,7 +361,7 @@ class Menu:
             tk.destroy()
     def save(self):
         self.destroy_items()
-        with open(f'spotify-shuffle/data/{playlist.playlistName}.dat', 'w', encoding='utf-8') as file:
+        with open(f'musical-analysis/data/{playlist.playlistName}.dat', 'w', encoding='utf-8') as file:
             for song in playlist.list:
                 file.write(f'{song.name}|{song.artistCount}|')
                 i = 0
